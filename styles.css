@@ -1,0 +1,213 @@
+:root {
+  /* =========================================================================
+     PALETA DE CORES
+     -------------------------------------------------------------------------
+     Cores base utilizadas em todo o aplicativo. Altere aqui para mudar as
+     cores globais sem precisar procurar em vários trechos do CSS.
+  ========================================================================= */
+  --cor-primaria: #b10707;       /* Vermelho principal / botões / destaques */
+  --cor-primaria-dark: #bd0d0d;  /* Tom mais escuro para estados :hover     */
+  --hover-vermelho: rgba(255,0,0,0.25); /* Vermelho translúcido p/ hovers   */
+
+  --cinza-claro: #f5f5f5;  /* Fundo neutro geral                            */
+  --cinza-medio: #e0e0e0;  /* Bordas, divisores                             */
+  --cinza-escuro: #707070; /* Texto secundário                              */
+}
+
+/******************************************************************************
+ *  REGRAS GERAIS E RESET                                                    *
+ *****************************************************************************/
+* {
+  box-sizing: border-box;  /* Inclui padding/border no cálculo do width/height */
+  margin: 0;               /* Remove margens padrão do navegador                */
+  padding: 0;              /* Remove paddings padrão do navegador               */
+}
+
+body {
+  font-family: Roboto, Arial, sans-serif; /* Tipografia base */
+  background: var(--cinza-claro);         /* Fundo neutro */
+  display: flex;                          /* Centraliza o app horizontalmente */
+  align-items: flex-start;                /* Alinha topo do app com viewport */
+  justify-content: center;                /* Centraliza horizontalmente */
+  min-height: 100vh;                      /* Garante altura mínima de tela cheia */
+  color: #222;                            /* Cor de texto padrão */
+  padding-top: 3.5rem;                    /* Espaço para o menu fixo (altura aprox.) */
+}
+
+/******************************************************************************
+ *  MENU FIXO (APENAS BOTÕES)                                                *
+ *  -----------------------------------------------------------
+ *  - Fica fixo no topo independente da rolagem
+ *  - Não possui faixa ou background; apenas os botões são exibidos
+ *  - Centralizado horizontalmente com translateX(-50%)
+ *****************************************************************************/
+.menu-horizontal {
+  list-style: none;              /* Remove bullets */
+  position: center;               /* Fixa no topo */
+  top: 0;
+  left: -100%;                     /* Centraliza */
+  transform: translateX(-1%);   /* Ajuste de centralização */
+  display: flex;                 /* Botões em linha */
+  gap: 0.5rem;                   /* Espaço entre botões */
+  padding: 0;                    /* Sem faixa extra */
+  background: transparent;       /* Totalmente transparente */
+  z-index: 100;                  /* Sobrepõe conteúdo */
+}
+
+.menu-horizontal li {
+  background: var(--cor-primaria); /* Cor principal */
+  color: #fff;                     /* Texto branco */
+  padding: 0.65rem 1.15rem;        /* Tamanho do botão */
+  border-radius: 6px;              /* Cantos arredondados */
+  font-weight: 600;                /* Texto em negrito */
+  white-space: nowrap;             /* Impede quebra de linha interna */
+  cursor: pointer;                 /* Muda cursor para indicar clique */
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08); /* Sombra suave */
+  transition: background 0.2s, transform 0.1s; /* Animações suaves */
+}
+
+.menu-horizontal li:hover {
+  background: var(--cor-primaria-dark); /* Tom mais escuro no hover */
+  transform: translateY(-1px);          /* Pequena elevação visual  */
+}
+
+.menu-horizontal li:active {
+  transform: translateY(0);             /* Volta ao lugar ao clicar */
+}
+
+/******************************************************************************
+ *  CONTAINER PRINCIPAL (#app)                                               *
+ *  -----------------------------------------------------------
+ *  - Onde todas as páginas internas são renderizadas
+ *  - Mantém overflow visível para evitar corte do menu
+ *****************************************************************************/
+#app {
+  width: 100%;
+  max-width: 680px;                     /* Largura máxima para dispositivos grandes */
+  background: #fff;                     /* Fundo branco para contraste de conteúdo */
+  border-radius: 12px;                  /* Cantos arredondados */
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08); /* Sombra externa */
+  overflow: visible;                    /* Permite que elementos internos transbordem */
+  margin-top: 1rem;                     /* Espaço abaixo do menu */
+}
+
+/******************************************************************************
+ *  SISTEMA DE PÁGINAS                                                      *
+ *****************************************************************************/
+.pagina {
+  display: none;                        /* Escondida por padrão */
+  padding: 2.2rem 1.5rem;               /* Espaçamento interno */
+}
+
+.pagina.ativa {
+  display: block;                       /* Mostrada quando ativa via JS */
+}
+
+/******************************************************************************
+ *  LOGOTIPOS                                                               *
+ *****************************************************************************/
+.logo,
+.logo-pequeno {
+  display: block;
+  margin: 2rem auto;                    /* Centraliza e dá espaçamento */
+  cursor: pointer;                      /* Permite clique (voltar ao início, etc.) */
+}
+
+.logo {           width: 70%;  max-width: 280px; }
+.logo-pequeno {   width: 45%;  max-width: 150px; }
+
+/* Logo menor usada especificamente na página de Execução de O.S. */
+#ordemExecucao .logo-pequeno {
+  margin: 1.5rem auto 1rem;
+}
+
+/******************************************************************************
+ *  NAVEGAÇÃO SECUNDÁRIA - AGENDA                                           *
+ *****************************************************************************/
+.agenda-nav {
+  list-style: none;
+  display: flex;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.agenda-nav li {
+  flex: 1;                              /* Cada item ocupa mesma largura */
+  text-align: center;
+  padding: 0.6rem 0;
+  background: var(--cinza-claro);
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.agenda-nav li:hover {
+  background: var(--hover-vermelho);    /* Destaque no hover */
+}
+
+/******************************************************************************
+ *  LISTAGENS & FORMULÁRIOS                                                 *
+ *****************************************************************************/
+.lista-agenda,
+.lista-clientes {
+  list-style: none;
+  padding: 0;
+}
+
+.lista-agenda li,
+.cliente-item {
+  padding: 0.6rem 0.5rem;
+  border-bottom: 1px solid var(--cinza-medio);
+}
+
+.cliente-item {
+  cursor: pointer;
+}
+
+.cliente-item:hover {
+  background: var(--cinza-claro);
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;                            /* Espaço vertical entre campos */
+}
+
+input,
+textarea {
+  font: inherit;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--cinza-medio);
+  border-radius: 8px;
+}
+
+button {
+  font: inherit;
+  font-weight: 600;
+  padding: 0.8rem 1rem;
+  background: var(--cor-primaria);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+button:hover { background: var(--cor-primaria-dark); }
+
+/* Aviso "nenhum resultado" */
+.no-results {
+  padding: 0.75rem;
+  text-align: center;
+  color: var(--cinza-escuro);
+}
+
+/******************************************************************************
+ *  CANVAS DE ASSINATURA                                                    *
+ *****************************************************************************/
+#signaturePad {
+  border: 1px solid var(--cinza-medio);
+  border-radius: 4px;
+}

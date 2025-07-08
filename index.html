@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Brasprag</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script defer src="script.js"></script>
+</head>
+<body>
+  <div id="app">
+
+    <!-- Splash -->
+    <div id="pagina1" class="pagina ativa">
+      <img src="brasprag.jpg" alt="Logo Brasprag" class="logo" onclick="irParaLogin()">
+    </div>
+
+    <!-- Login -->
+    <div id="pagina2" class="pagina">
+      <img src="brasprag.jpg" alt="Logo Brasprag" class="logo-pequeno">
+      <form onsubmit="return fazerLogin()">
+        <input type="text" id="usuario" placeholder="Usuário" required>
+        <input type="password" id="senha" placeholder="Senha" required>
+        <button type="submit">Entrar</button>
+      </form>
+    </div>
+
+    <!-- Menu -->
+    <div id="pagina3" class="pagina">
+      <h2></h2>
+      <ul class="menu-horizontal">
+  <li onclick="abrirPagina('agenda')">Agenda</li>
+  <li onclick="abrirPagina('clientesCadastrados')">Clientes</li>
+  <li onclick="abrirPagina('ordens')">Ordens de Serviço</li>
+  <li onclick="abrirPagina('sobre')">Sobre o Aplicativo</li>
+  <li onclick="voltarInicio()">Sair</li>
+</ul>
+
+
+    </div>
+
+    <!-- Agenda -->
+    <div id="agenda" class="pagina">
+      <h2>Agenda</h2>
+      <ul class="agenda-nav">
+        <li onclick="mostrarAgenda('dia')">Dia</li>
+        <li onclick="mostrarAgenda('semana')">Semana</li>
+        <li onclick="mostrarAgenda('mes')">Mês</li>
+      </ul>
+      <ul id="listaAgenda" class="lista-agenda"></ul>
+      <button onclick="voltarMenu()">Voltar</button>
+    </div>
+
+    <!-- Template nav clientes -->
+    <template id="tpl-nav-clientes">
+      <div class="clientes-nav">
+        <button onclick="mostrarPagina('clientesCadastrados')">Clientes Cadastrados</button>
+        <button onclick="mostrarPagina('cadastroClientes')">Cadastro de Clientes</button>
+      </div>
+    </template>
+
+    <!-- Clientes Cadastrados -->
+    <div id="clientesCadastrados" class="pagina">
+      <h2>Clientes Cadastrados</h2>
+      <input type="text" id="codigoBusca" placeholder="Digite o código do cliente">
+      <ul id="listaClientes" class="lista-clientes"></ul>
+      <p id="nenhumCliente" class="no-results" hidden>Nenhum cliente encontrado.</p>
+      <button onclick="voltarMenu()">Voltar</button>
+    </div>
+
+    <!-- Cadastro de Clientes -->
+    <div id="cadastroClientes" class="pagina">
+      <h2>Novo Cliente</h2>
+      <form id="formNovoCliente">
+        <input type="text" id="novoCodigo" placeholder="Código" required>
+        <input type="text" id="novoNome" placeholder="Nome" required>
+        <input type="text" id="novoRamo" placeholder="Ramo" required>
+        <button type="submit">Adicionar Cliente</button>
+      </form>
+      <button onclick="voltarMenu()">Voltar</button>
+    </div>
+
+    <!-- Ordens de Serviço -->
+    <div id="ordens" class="pagina">
+      <h2>Ordens de Serviço</h2>
+      <ul id="listaOrdens"></ul>
+      <p id="semOrdens" class="no-results">Nenhuma ordem registrada.</p>
+      <button onclick="voltarMenu()">Voltar</button>
+    </div>
+
+    <!-- Sobre -->
+    <div id="sobre" class="pagina">
+      <h2>Sobre o Aplicativo</h2>
+      <p>Aplicativo Brasprag para controle de pragas.</p>
+      <button onclick="voltarMenu()">Voltar</button>
+    </div>
+
+    <!-- Execução -->
+    <div id="ordemExecucao" class="pagina">
+      <h2>Execução de Ordem de Serviço</h2>
+      <form id="formOrdem">
+        <p><strong>Cliente:</strong> <span id="clienteNome"></span></p>
+
+        <label for="dataHora">Data e Hora:</label>
+        <input type="text" id="dataHora" readonly>
+
+        <label for="localizacao">Localização Atual:</label>
+        <input type="text" id="localizacao" readonly>
+
+        <label for="produtos">Produtos Aplicados:</label>
+        <input type="text" id="produtos">
+
+        <label for="pragas">Tipo de Praga:</label>
+        <input type="text" id="pragas">
+
+        <label for="ocorrencia">Ocorrência:</label>
+        <textarea id="ocorrencia" rows="4"></textarea>
+
+        <label for="fotoCliente">Foto da Execução:</label>
+        <input type="file" accept="image/*" capture="environment" id="fotoCliente">
+
+        <label>Assinatura do Técnico:</label>
+        <canvas id="signaturePad" width="300" height="160"></canvas>
+        <button type="button" id="limparAssinatura">Limpar Assinatura</button>
+
+        <button type="button" onclick="finalizarOrdemServico()">Finalizar Ordem de Serviço</button>
+      </form>
+    </div>
+
+  </div>
+</body>
+</html>
