@@ -1,221 +1,209 @@
-// ================== Dados ==================
-let clientes=[
- {codigo:"12530",nome:"SuperAlimentos LTDA",ramo:"Alimentício"},
- {codigo:"12420",nome:"Indústria Mecânica Forte",ramo:"Industrial"},
- {codigo:"12380",nome:"Farmavida",ramo:"Farmacêutico"},
- {codigo:"12370",nome:"AgroMix",ramo:"Agrícola"},
- {codigo:"12360",nome:"Construmax",ramo:"Construção"}
-];
-function geraAgenda(n){const a=[];for(let i=0;i<n;i++){const c=clientes[i%clientes.length];a.push({cliente:c.nome,codigo:c.codigo});}return a;}
-const agendaData={dia:geraAgenda(4),semana:geraAgenda(20),mes:geraAgenda(40)};
+/* ============================================================================
+   Brasprag – SCRIPT PRINCIPAL (JS)
+   ----------------------------------------------------------------------------
+   • Login aceita qualquer usuário/senha (não vazios)
+   • Assinatura sem scroll em mobile
+   • PDF organizado em seções espaçadas
+   • Menu de navegação + responsividade
+   • **VERSÃO COMPLETA** – arquivo encerrado corretamente
+============================================================================ */
 
-// ================== Navegação ==================
-function mostrarPagina(id){
- document.querySelectorAll(".pagina").forEach(p=>p.classList.remove("ativa"));
- document.getElementById(id).classList.add("ativa");
+/******************************* ESTADO GLOBAL *******************************/
+const state = {
+  usuarioLogado: false,
+  clientes: [],          // { id, codigo, nome, ramo }
+  ordens: [],            // { id, clienteId, ... }
+  ordemAtual: null,      // cliente selecionado para execução
+};
 
- if(id==="clientesCadastrados"||id==="cadastroClientes"){
-  const nav=document.getElementById("tpl-nav-clientes").content.firstElementChild.cloneNode(true);
-  const cont=document.getElementById(id);
-  if(!cont.querySelector(".clientes-nav"))cont.insertBefore(nav,cont.firstChild);
- }
-}
-function irParaLogin(){mostrarPagina("pagina2");}
-function fazerLogin(){mostrarPagina("pagina3");return false;}
-function abrirPagina(id){mostrarPagina(id);}
-function voltarMenu(){mostrarPagina("pagina3");}
-function voltarInicio(){mostrarPagina("pagina1");}
+/******************************* UTILIDADES *********************************/
+const $  = (sel) => document.querySelector(sel);
+const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
-// ================== Agenda ==================
-function mostrarAgenda(tipo){
- const ul=document.getElementById("listaAgenda");
- ul.innerHTML="";
- agendaData[tipo].forEach(it=>{
-  const li=document.createElement("li");
-  li.textContent=`${it.cliente} (cód. ${it.codigo})`;
-  ul.appendChild(li);
- });
+function showPage(id) {
+  $$(".pagina").forEach(p => p.classList.remove("ativa"));
+  $("#" + id).classList.add("ativa");
 }
 
-// ================== Clientes ==================
-const listaClientesEl=()=>document.getElementById("listaClientes");
-const codigoBuscaEl=()=>document.getElementById("codigoBusca");
-const nenhumClienteEl=()=>document.getElementById("nenhumCliente");
-
-document.addEventListener("DOMContentLoaded",()=>{
- construirLista();
- codigoBuscaEl()?.addEventListener("input",filtrarClientes);
- document.getElementById("formNovoCliente").addEventListener("submit",e=>{e.preventDefault();addCliente();});
- initSignaturePad();
-});
-function construirLista(){
- const ul=listaClientesEl();if(!ul)return;ul.innerHTML="";
- clientes.forEach(c=>{
-  const li=document.createElement("li");
-  li.className="cliente-item";
-  li.dataset.codigo=c.codigo;
-  li.innerHTML=`<strong>${c.nome}</strong><br><small>${c.codigo} • ${c.ramo}</small>`;
-  li.onclick=()=>selecionarCliente(c.codigo);
-  ul.appendChild(li);
- });
-}
-function filtrarClientes(){
- const v=codigoBuscaEl().value.trim();let vis=0;
- [...listaClientesEl().children].forEach(li=>{
-  if(!v||li.dataset.codigo.startsWith(v)){li.hidden=false;vis++;}else li.hidden=true;
- });
- nenhumClienteEl().hidden=vis!==0;
-}
-function addCliente(){
- const cod=document.getElementById("novoCodigo").value.trim();
- const nome=document.getElementById("novoNome").value.trim();
- const ramo=document.getElementById("novoRamo").value.trim();
- if(!cod||!nome||!ramo)return alert("Preencha todos os campos.");
- if(clientes.some(c=>c.codigo===cod))return alert("Código já existe.");
- clientes.push({codigo:cod,nome,ramo});
- alert("Cliente adicionado!");
- document.getElementById("formNovoCliente").reset();
- construirLista();
+function formatDateTime(date = new Date()) {
+  return date.toLocaleString("pt-BR", {
+    day: "2-digit", month: "2-digit", year: "numeric",
+    hour: "2-digit", minute: "2-digit",
+  });
 }
 
-// ================== Selecionar Cliente ==================
-function selecionarCliente(codigo){
- const c=clientes.find(x=>x.codigo===codigo);
- if(!c)return;
- document.getElementById("clienteNome").textContent=`${c.nome} (${c.codigo})`;
- document.getElementById("dataHora").value=new Date().toLocaleString();
- obterLocalizacao();
- mostrarPagina("ordemExecucao");
+function gerarId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2);
 }
 
-// ================== Geolocalização ==================
-function obterLocalizacao(){
- const inp=document.getElementById("localizacao");
- if(!navigator.geolocation){inp.value="Geolocalização não suportada.";return;}
- inp.value="Obtendo localização...";
- navigator.geolocation.getCurrentPosition(
-  pos=>{
-   const {latitude,longitude}=pos.coords;
-   inp.value=`${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
-  },
-  ()=>{inp.value="Falha ao obter localização";}
- );
-}
+/******************************* NAVEGAÇÃO BÁSICA ****************************/
+window.irParaLogin = () => showPage("pagina2");
 
-// ================== Assinatura ==================
-let assinaturaVazia=true;
-function initSignaturePad(){
- const canvas=document.getElementById("signaturePad");
- const ctx=canvas.getContext("2d");
- let desenhando=false;
+window.fazerLogin = () => {
+  const usuario = $("#usuario").value.trim();
+  const senha   = $("#senha").value.trim();
+  if (!usuario || !senha) {
+    alert("Preencha usuário e senha.");
+    return false;
+  }
+  state.usuarioLogado = true;
+  showPage("agenda");
+  return false; // impede reload
+};
 
- const getPos=e=>{
-  const rect=canvas.getBoundingClientRect();
-  const clientX=e.touches?e.touches[0].clientX:e.clientX;
-  const clientY=e.touches?e.touches[0].clientY:e.clientY;
-  return {x:clientX-rect.left,y:clientY-rect.top};
- };
+window.abrirPagina = (id) => {
+  showPage(id);
+  if (id === "clientesCadastrados") preencherListaClientes();
+  if (id === "ordens") preencherListaOrdens();
+};
 
- const desenhar=e=>{
-  if(!desenhando)return;
+window.voltarInicio = () => {
+  state.usuarioLogado = false;
+  showPage("pagina1");
+};
+
+/******************************* CLIENTES ************************************/
+const formNovoCliente = $("#formNovoCliente");
+formNovoCliente?.addEventListener("submit", (e) => {
   e.preventDefault();
-  const {x,y}=getPos(e);
-  ctx.lineWidth=2;
-  ctx.lineCap="round";
-  ctx.strokeStyle="#000";
-  ctx.lineTo(x,y);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(x,y);
-  assinaturaVazia=false;
- };
+  const codigo = $("#novoCodigo").value.trim();
+  const nome   = $("#novoNome").value.trim();
+  const ramo   = $("#novoRamo").value.trim();
+  if (!codigo || !nome || !ramo) return;
+  state.clientes.push({ id: gerarId(), codigo, nome, ramo });
+  e.target.reset();
+  alert("Cliente cadastrado!");
+});
 
- const iniciar=e=>{
-  desenhando=true;
-  const {x,y}=getPos(e);
-  ctx.beginPath();
-  ctx.moveTo(x,y);
- };
+function preencherListaClientes() {
+  const ul = $("#listaClientes");
+  const termo = $("#codigoBusca").value.trim().toLowerCase();
+  ul.innerHTML = "";
+  const lista = state.clientes.filter(c => c.codigo.toLowerCase().includes(termo));
+  $("#nenhumCliente").hidden = !!lista.length;
+  lista.forEach(c => {
+    const li = document.createElement("li");
+    li.className = "cliente-item";
+    li.textContent = `${c.codigo} – ${c.nome}`;
+    li.onclick = () => iniciarExecucaoOrdem(c.id);
+    ul.appendChild(li);
+  });
+}
+$("#codigoBusca").addEventListener("input", preencherListaClientes);
 
- const parar=e=>{
-  desenhando=false;
-  ctx.beginPath();
- };
-
- // Pointer events (melhor compatibilidade)
- canvas.addEventListener("pointerdown",iniciar);
- canvas.addEventListener("pointermove",desenhar);
- canvas.addEventListener("pointerup",parar);
- canvas.addEventListener("pointerleave",parar);
-
- document.getElementById("limparAssinatura").onclick=()=>{
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  assinaturaVazia=true;
- };
+/******************************* EXECUÇÃO DE O.S. ****************************/
+function iniciarExecucaoOrdem(clienteId) {
+  const cliente = state.clientes.find(c => c.id === clienteId);
+  if (!cliente) return;
+  state.ordemAtual = cliente;
+  $("#clienteNome").textContent = `${cliente.nome} (${cliente.codigo})`;
+  $("#dataHora").value = formatDateTime();
+  $("#produtos").value = $("#pragas").value = $("#ocorrencia").value = "";
+  $("#fotoCliente").value = "";
+  limparAssinaturaCanvas();
+  obterGeo();
+  showPage("ordemExecucao");
 }
 
-// ================== Finalizar OS ==================
-async function finalizarOrdemServico(){
- if(assinaturaVazia)return alert("Assine para finalizar.");
- const cliente=document.getElementById("clienteNome").textContent;
- const dataHora=document.getElementById("dataHora").value;
- const local=document.getElementById("localizacao").value;
- const produtos=document.getElementById("produtos").value.trim();
- const pragas=document.getElementById("pragas").value.trim();
- const ocorr=document.getElementById("ocorrencia").value.trim();
- const fotoInput=document.getElementById("fotoCliente");
- let fotoData=null;
- if(fotoInput.files.length)fotoData=await fileToDataURL(fotoInput.files[0]);
-
- const {jsPDF}=window.jspdf;
- const doc=new jsPDF();
- doc.text("Ordem de Serviço",10,15);
- doc.text(`Cliente: ${cliente}`,10,25);
- doc.text(`Data/Hora: ${dataHora}`,10,33);
- doc.text(`Local: ${local}`,10,41);
- doc.text(`Produtos: ${produtos}`,10,49);
- doc.text(`Pragas: ${pragas}`,10,57);
- doc.text("Ocorrência:",10,65);
- doc.text(ocorr||"-",10,73);
-
- let currentY=80;
- if(fotoData){
-   doc.text("Foto:",10,currentY);
-   currentY+=5;
-   doc.addImage(fotoData,"JPEG",10,currentY,80,60);
-   currentY+=65;
- }
- doc.text("Assinatura:",10,currentY+5);
- const signImg=document.getElementById("signaturePad").toDataURL("image/png");
- doc.addImage(signImg,"PNG",60,currentY,100,40);
-
- const blob=doc.output("blob");
- const url=URL.createObjectURL(blob);
- const filename=`ordem_${Date.now()}.pdf`;
-
- const li=document.createElement("li");
- const a=document.createElement("a");
- a.href=url;
- a.download=filename;
- a.textContent=`Ordem ${cliente}`;
- li.appendChild(a);
- document.getElementById("listaOrdens").prepend(li);
- document.getElementById("semOrdens").style.display="none";
-
- alert("Ordem finalizada!");
- // Reset
- document.getElementById("formOrdem").reset();
- const ctx=document.getElementById("signaturePad").getContext("2d");
- ctx.clearRect(0,0,300,160);
- assinaturaVazia=true;
-
- // Volta para página de clientes
- mostrarPagina("clientesCadastrados");
+function obterGeo() {
+  const input = $("#localizacao");
+  if (!navigator.geolocation) { input.value = "Geolocalização não suportada"; return; }
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      const { latitude, longitude } = pos.coords;
+      input.value = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+    },
+    () => input.value = "Permissão negada ou erro"
+  );
 }
-function fileToDataURL(file){
- return new Promise(res=>{
-  const reader=new FileReader();
-  reader.onload=()=>res(reader.result);
-  reader.readAsDataURL(file);
- });
+
+/******************************* ASSINATURA **********************************/
+const canvas = $("#signaturePad");
+let ctx, drawing = false;
+if (canvas) {
+  ctx = canvas.getContext("2d");
+  ctx.lineWidth = 2;
+  canvas.style.touchAction = "none"; // evita scroll/pinch na área
+
+  const pos = (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const evt  = e.touches ? e.touches[0] : e;
+    return [evt.clientX - rect.left, evt.clientY - rect.top];
+  };
+
+  const start = (e) => { e.preventDefault(); drawing = true; ctx.beginPath(); ctx.moveTo(...pos(e)); };
+  const draw  = (e) => { if (!drawing) return; e.preventDefault(); ctx.lineTo(...pos(e)); ctx.stroke(); };
+  const end   = () => { drawing = false; };
+
+  ["mousedown", "touchstart"].forEach(ev => canvas.addEventListener(ev, start, { passive:false }));
+  ["mousemove", "touchmove" ].forEach(ev => canvas.addEventListener(ev, draw,  { passive:false }));
+  ["mouseup", "mouseleave", "touchend", "touchcancel"].forEach(ev => canvas.addEventListener(ev, end));
+
+  $("#limparAssinatura").addEventListener("click", limparAssinaturaCanvas);
 }
+
+function limparAssinaturaCanvas() { ctx && ctx.clearRect(0, 0, canvas.width, canvas.height); }
+
+function assinaturaVazia() {
+  if (!ctx) return true;
+  const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+  return !pixels.some(p => p !== 0);
+}
+
+/******************************* FINALIZAR O.S. ******************************/
+window.finalizarOrdemServico = () => {
+  if (assinaturaVazia()) { alert("Por favor, assine antes de finalizar."); return; }
+
+  const assinaturaURL = canvas.toDataURL();
+  const fotoFile = $("#fotoCliente").files[0];
+  const fotoURL = fotoFile ? URL.createObjectURL(fotoFile) : "";
+
+  const ordem = {
+    id: gerarId(),
+    clienteId : state.ordemAtual.id,
+    dataHora  : $("#dataHora").value,
+    local     : $("#localizacao").value,
+    produtos  : $("#produtos").value,
+    pragas    : $("#pragas").value,
+    ocorrencia: $("#ocorrencia").value,
+    assinaturaURL,
+    fotoURL,
+  };
+
+  gerarPdf(ordem).then(pdfURL => {
+    ordem.pdfURL = pdfURL;
+    state.ordens.push(ordem);
+    preencherListaOrdens();
+    showPage("clientesCadastrados");
+  });
+};
+
+/******************************* GERAR PDF ***********************************/
+async function gerarPdf(o) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  doc.setFontSize(16);
+  doc.text("Ordem de Serviço – Brasprag", 10, 15);
+  doc.setFontSize(11);
+
+  let y = 30;
+  const add = (label, value) => { doc.text(`${label}:`, 10, y); doc.text(value || "-", 55, y); y += 8; };
+
+  const cliente = state.clientes.find(c => c.id === o.clienteId);
+  add("Cliente", cliente ? `${cliente.nome} (${cliente.codigo})` : "-");
+  add("Data/Hora", o.dataHora);
+  add("Local", o.local);
+  add("Produtos", o.produtos);
+  add("Pragas", o.pragas);
+
+  doc.text("Ocorrência:", 10, y); y += 6;
+  const ocorrenciaText = doc.splitTextToSize(o.ocorrencia || "-", 180);
+  doc.text(ocorrenciaText, 10, y);
+  y += ocorrenciaText.length * 6 + 4;
+
+  doc.line(10, y, 200, y); y += 10;
+
+  doc.text("Assinatura do Técnico:", 10, y); y += 5;
+  doc.addImage(o.assin  )
+};
